@@ -29,7 +29,7 @@ public class ParserHH implements Parser {
     private Pattern pattern = Pattern.compile(".*\\bjava\\b(?!script| script).*", Pattern.CASE_INSENSITIVE);
     private VacansiesDB dateBase;
 
-    public ParserHH() {
+    ParserHH() {
         this.dateBase = new VacansiesDB(new Config());
     }
 
@@ -43,8 +43,8 @@ public class ParserHH implements Parser {
         int n = 0;
         LOG.info("Start Parsing Jobs");
         while (pageLimit) {
-            String url = "https://voronezh.hh.ru/search/vacancy?L_is_autosearch=false&area=26&clusters=true" +
-                    "&enable_snippets=true&specialization=1&page=" + n++;
+            String url = "https://voronezh.hh.ru/search/vacancy?L_is_autosearch=false&area=26&clusters=true"
+                    + "&enable_snippets=true&specialization=1&page=" + n++;
 
             Document page;
             try {
@@ -84,7 +84,7 @@ public class ParserHH implements Parser {
         return vacancies;
     }
 
-    public LocalDateTime getStartDate() {
+    private LocalDateTime getStartDate() {
         LocalDateTime lastStartDate = dateBase.getLastDate();
         if (lastStartDate == null) {
             lastStartDate = LocalDateTime.now().minusMonths(1).plusDays(1);
