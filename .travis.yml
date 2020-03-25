@@ -1,0 +1,28 @@
+language: java
+
+jdk: openjdk11
+
+services:
+  -postgresql
+
+before_install:
+  -psql -c 'create database Vacancies;' -U postgres
+
+sudo: false # faster builds
+
+# после выполнения сборки запустить скрипт, который будет собирать статистику по JaCoCo
+# Здесь используется сторонни сервис https://codecov.io/
+after_success:
+- bash <(curl -s https://codecov.io/bash)
+
+# Отправлять уведомление на почту sereginsun@yandex.ru если сборка упала
+notifications:
+  email:
+    recipients:
+    - sereginsun@yandex.ru
+    on_success: never # default: change
+    on_failure: always # default: always
+
+env:
+  global:
+  - CODECOV_TOKEN="623d8282-c8de-4b10-bceb-d5b3403f3c94"
