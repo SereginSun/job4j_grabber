@@ -1,9 +1,13 @@
 package ru.job4j.parser;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.quartz.CronScheduleBuilder.cronSchedule;
+import static org.quartz.JobBuilder.newJob;
+import static org.quartz.TriggerBuilder.newTrigger;
 
 /**
  * Class for QuartzAPI.
@@ -13,7 +17,7 @@ import org.quartz.impl.StdSchedulerFactory;
  * @since 15.02.2020
  */
 public class SchedulerJob implements Job {
-    private static final Logger LOG = LogManager.getLogger(SchedulerJob.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(SchedulerJob.class.getName());
     private final Config config;
 
     public SchedulerJob() {
@@ -22,12 +26,11 @@ public class SchedulerJob implements Job {
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) {
-        try (VacansiesDB dataBase = new VacansiesDB(new Config())) {
-            ParserSQL parserSQL = new ParserSQL();
-            ParserHH parserHH = new ParserHH();
+        LOG.info("Start worker...");
+        try (VacanciesDB dataBase = new VacanciesDB(this.config)) {
+            ParserSQL parserSQL = new ParserSQL(dataBase.getLastDate());
             LOG.info("Start of parsing");
-            dataBase.addVacansies(parserSQL.parser());
-            dataBase.addVacansies(parserHH.parser());
+            dataBase.addVacancies(parserSQL.parser());
         } catch (Exception e) {
             LOG.error("Error: ", e.fillInStackTrace());
         }
@@ -35,18 +38,15 @@ public class SchedulerJob implements Job {
 
     public void startScheduler() {
         try {
-            JobDetail jobDetail = JobBuilder.newJob(SchedulerJob.class)
-                    .withIdentity("job1", "group1")
+            SchedulerFactory schedulerFactory = new StdSchedulerFactory();
+            Scheduler scheduler = schedulerFactory.getScheduler();
+            JobDetail job = newJob(SchedulerJob.class).build();
+            CronTrigger trigger = newTrigger()
+                    .startNow()
+                    .withSchedule(cronSchedule(this.config.get("cron.time")))
                     .build();
-            CronTrigger trigger = TriggerBuilder
-                    .newTrigger()
-                    .withIdentity("trigger1", "group1")
-                    .withSchedule(CronScheduleBuilder.cronSchedule(this.config.get("cron.time")))
-                    .build();
-            Scheduler scheduler = new StdSchedulerFactory().getScheduler();
             scheduler.start();
-            LOG.info("The scheduler is running.");
-            scheduler.scheduleJob(jobDetail, trigger);
+            scheduler.scheduleJob(job, trigger);
         } catch (SchedulerException e) {
             LOG.error("Scheduler error: ", e.fillInStackTrace());
         }

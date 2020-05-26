@@ -1,11 +1,11 @@
 package ru.job4j.parser;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URL;
@@ -22,15 +22,17 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 public class ParserHH implements Parser {
-    private static final Logger LOG = LogManager.getLogger(ParserHH.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(ParserHH.class.getName());
 
     private List<Vacancy> vacancies = new ArrayList<>();
     private boolean pageLimit = true;
     private Pattern pattern = Pattern.compile(".*\\bjava\\b(?!script| script).*", Pattern.CASE_INSENSITIVE);
-    private VacansiesDB dateBase;
 
-    ParserHH() {
-        this.dateBase = new VacansiesDB(new Config());
+    private LocalDateTime startDate;
+
+    public ParserHH(LocalDateTime startDate) {
+        this.startDate = startDate;
+        LOG.info("Date of last vacancy {}", startDate);
     }
 
     private boolean checkJobTitle(String jobTitle) {
@@ -39,13 +41,11 @@ public class ParserHH implements Parser {
 
     @Override
     public List<Vacancy> parser() {
-        LocalDateTime dateTime = getStartDate();
         int n = 0;
         LOG.info("Start Parsing Jobs");
         while (pageLimit) {
-            String url = "https://voronezh.hh.ru/search/vacancy?L_is_autosearch=false&area=26&clusters=true"
-                    + "&enable_snippets=true&specialization=1&page=" + n++;
-
+            String url = "https://voronezh.hh.ru/search/vacancy?L_is_autosearch=false&area=1844&clusters=true"
+                    + "&enable_snippets=true&no_magic=true&specialization=1&page=" + n++;
             Document page;
             try {
                 page = Jsoup.parse(new URL(url), 5000);
@@ -58,7 +58,7 @@ public class ParserHH implements Parser {
                             .getElementsByAttributeValueContaining("data-qa", "vacancy-date");
                     String date = dates.text();
                     if (checkJobTitle(jobTitle)) {
-                        if (convertDate(date).isAfter(dateTime)) {
+                        if (convertDate(date).isAfter(startDate)) {
                             String link = element
                                     .getElementsByAttributeValueContaining("data-qa", "vacancy-title")
                                     .attr("href");
@@ -82,14 +82,6 @@ public class ParserHH implements Parser {
         }
         LOG.info("Job parsing completed");
         return vacancies;
-    }
-
-    private LocalDateTime getStartDate() {
-        LocalDateTime lastStartDate = dateBase.getLastDate();
-        if (lastStartDate == null) {
-            lastStartDate = LocalDateTime.now().minusMonths(1).plusDays(1);
-        }
-        return lastStartDate;
     }
 
     @Override

@@ -1,14 +1,15 @@
 package ru.job4j.parser;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URL;
+import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -27,15 +28,17 @@ import java.util.regex.Pattern;
  * @since 15.02.2020
  */
 public class ParserSQL implements Parser {
-    private static final Logger LOG = LogManager.getLogger(ParserSQL.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(ParserSQL.class.getName());
 
     private List<Vacancy> vacancies = new ArrayList<>();
     private boolean pageLimit = true;
     private Pattern pattern = Pattern.compile(".*\\bjava\\b(?!script| script).*", Pattern.CASE_INSENSITIVE);
-    private VacansiesDB dateBase;
 
-    public ParserSQL() {
-        this.dateBase = new VacansiesDB(new Config());
+    private LocalDateTime startDate;
+
+    public ParserSQL(LocalDateTime startDate) {
+        this.startDate = startDate;
+        LOG.info("Date of last vacancy {}", startDate);
     }
 
     private boolean checkJobTitle(String jobTitle) {
@@ -44,9 +47,8 @@ public class ParserSQL implements Parser {
 
     @Override
     public List<Vacancy> parser() {
-        LocalDateTime dateTime = getStartDate();
         int n = 1;
-        LOG.info("Start Parsing Jobs");
+        LOG.info("Start Parsing Jobs sql.ru");
         while (pageLimit) {
             String url = "https://www.sql.ru/forum/job-offers/" + n++;
             Document page;
@@ -61,7 +63,7 @@ public class ParserSQL implements Parser {
                     String jobTitle = element.text();
                     String date = topicDate.text();
                     if (checkJobTitle(jobTitle)) {
-                        if (convertDate(date).isAfter(dateTime)) {
+                        if (convertDate(date).isAfter(startDate)) {
                             String link = row.select("a").attr("href");
                             Document vacancy = Jsoup.parse(new URL(link), 5000);
                             Element vacanciesTable = vacancy.selectFirst("table.msgTable");
@@ -78,16 +80,8 @@ public class ParserSQL implements Parser {
                 LOG.error("URL connection error: ", e.fillInStackTrace());
             }
         }
-        LOG.info("Job parsing completed");
+        LOG.info("Job sql.ru parsing completed");
         return vacancies;
-    }
-
-    public LocalDateTime getStartDate() {
-        LocalDateTime lastStartDate = dateBase.getLastDate();
-        if (lastStartDate == null) {
-            lastStartDate = LocalDateTime.of(2020, 1, 1, 0, 0);
-        }
-        return lastStartDate;
     }
 
     @Override

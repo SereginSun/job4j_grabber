@@ -1,7 +1,7 @@
 package ru.job4j.parser;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -14,14 +14,20 @@ import java.util.List;
  * @version $Id$
  * @since 15.02.2020
  */
-public class VacansiesDB implements AutoCloseable {
-    private static final Logger LOG = LogManager.getLogger(VacansiesDB.class.getName());
+public class VacanciesDB implements AutoCloseable {
+    private static final Logger LOG = LoggerFactory.getLogger(VacanciesDB.class.getName());
 
     private final Config config;
     private Connection conn;
 
-    public VacansiesDB(Config config) {
+    public VacanciesDB(Config config) {
         this.config = config;
+        this.init();
+    }
+
+    public VacanciesDB(Connection conn) {
+        this.config = new Config();
+        this.conn = conn;
         this.init();
     }
 
@@ -36,14 +42,13 @@ public class VacansiesDB implements AutoCloseable {
             conn = DriverManager.getConnection(url, username, password);
             LOG.info("Database connection established successfully!");
             Statement st = conn.createStatement();
-            st.executeQuery(create);
-            st.close();
+            st.execute(create);
         } catch (SQLException | ClassNotFoundException e) {
             LOG.error("Database access error", e.fillInStackTrace());
         }
     }
 
-    public void addVacansies(List<Vacancy> vacansies) {
+    public void addVacancies(List<Vacancy> vacansies) {
         String insert = "INSERT INTO vacancy (name, text, link, date) VALUES (?, ?, ?, ?) ON CONFLICT (name) DO NOTHING";
         try (PreparedStatement ps = conn.prepareStatement(insert)) {
             for (Vacancy vacancy : vacansies) {
@@ -54,7 +59,7 @@ public class VacansiesDB implements AutoCloseable {
                 ps.addBatch();
             }
             ps.executeBatch();
-            LOG.info("Vacancies added to the database.", vacansies.size());
+            LOG.info("Vacancies added to the database, {}.", vacansies.size());
         } catch (SQLException e) {
             LOG.error("Database access error", e.fillInStackTrace());
         }
@@ -65,11 +70,13 @@ public class VacansiesDB implements AutoCloseable {
         String getDate = "SELECT MAX(date)  FROM vacancy LIMIT 1";
         try (PreparedStatement ps = conn.prepareStatement(getDate)) {
             ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                lastDate = rs.getTimestamp(0).toLocalDateTime();
+            if (rs.next()) {
+                lastDate = LocalDateTime.now().minusYears(1).plusDays(1); // начало года надо
+            } else {
+                lastDate = rs.getTimestamp(1).toLocalDateTime();
             }
         } catch (SQLException e) {
-            LOG.error("Database access error", e.fillInStackTrace());
+            LOG.error("Database is empty, getLastDate method error ", e.fillInStackTrace());
         }
         return lastDate;
     }
