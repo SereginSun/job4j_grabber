@@ -11,7 +11,7 @@
         <profile>
             <id>test</id>
             <properties>
-                <db.url-vacancies>jdbc:postgresql://127.0.0.1:5432/vacancies</db.url-vacancies>
+                <db.url>jdbc:postgresql://127.0.0.1:5432/vacancies</db.url>
                 <db.username>postgres</db.username>
                 <db.password>password</db.password>
                 <db.driver>org.postgresql.Driver</db.driver>
@@ -20,7 +20,7 @@
         <profile>
             <id>production</id>
             <properties>
-                <db.url-vacancies>jdbc:postgresql://127.0.0.1:5432/vacancies</db.url-vacancies>
+                <db.url>jdbc:postgresql://127.0.0.1:5432/vacancies</db.url>
                 <db.username>postgres</db.username>
                 <db.password>password</db.password>
                 <db.driver>org.postgresql.Driver</db.driver>
@@ -32,7 +32,7 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <db.url-vacancies>jdbc:postgresql://localhost/vacancies</db.url-vacancies>
+                <db.url>jdbc:postgresql://localhost/vacancies</db.url>
                 <db.username>postgres</db.username>
                 <db.password>password</db.password>
                 <db.driver>org.postgresql.Driver</db.driver>
@@ -170,6 +170,14 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
             </plugin>
         </plugins>
 
