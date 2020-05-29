@@ -17,16 +17,5 @@ public class StartApp {
         LOG.info("Program start!");
         SchedulerJob job = new SchedulerJob();
         job.startScheduler();
-
-//        try (VacanciesDB dataBase = new VacanciesDB(new Config())) {
-//            LOG.info("Start program...");
-//            ParserSQL parserSQL = new ParserSQL(dataBase.getLastDate());
-//            ParserHH parserHH = new ParserHH(dataBase.getLastDate());
-//            LOG.info("Start of parsing");
-//            dataBase.addVacancies(parserSQL.parser());
-////            dataBase.addVacancies(parserHH.parser());
-//        } catch (Exception jee) {
-//            LOG.error("Error: ", jee.fillInStackTrace(), jee);
-//        }
     }
 }
